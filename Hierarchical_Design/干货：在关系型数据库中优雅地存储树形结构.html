@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
-<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/><meta name="exporter-version" content="Evernote Mac 6.5 (453172)"/><meta name="altitude" content="485.7275085449219"/><meta name="author" content="286999915@qq.com"/><meta name="created" content="2016-05-11 09:14:55 +0000"/><meta name="latitude" content="30.58435317489708"/><meta name="longitude" content="104.0519487852192"/><meta name="source" content="desktop.mac"/><meta name="updated" content="2016-05-30 10:20:52 +0000"/><title>干货：在关系型数据库中优雅地存储树形结构</title></head><body>
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/><meta name="exporter-version" content="Evernote Mac 6.5 (453172)"/><meta name="altitude" content="485.7275085449219"/><meta name="author" content="286999915@qq.com"/><meta name="created" content="2016-05-11 09:14:55 +0000"/><meta name="latitude" content="30.58435317489708"/><meta name="longitude" content="104.0519487852192"/><meta name="source" content="desktop.mac"/><meta name="updated" content="2016-05-30 10:36:27 +0000"/><title>干货：在关系型数据库中优雅地存储树形结构</title></head><body>
 <div><span style="font-size: 18px;">导语：</span></div>
 <div>我们时常会遇到这样的场景，如：组织结构图、回复评论的评论链、用于组织资源的树形资源组。</div>
 <div>如图：</div>
@@ -83,9 +83,10 @@
 <div>step b:</div>
 <div>insert into comment_path (ancestor, descendant, depth) select supertree.ancestor, subtree.descendant, supertree.depth+subtree.depth+1 from comment_path as supertree join comment_path as subtree where subtree.ancestor = 6 and supertree.descendant = 2;</div>
 <div><img src="%E5%B9%B2%E8%B4%A7%EF%BC%9A%E5%9C%A8%E5%85%B3%E7%B3%BB%E5%9E%8B%E6%95%B0%E6%8D%AE%E5%BA%93%E4%B8%AD%E4%BC%98%E9%9B%85%E5%9C%B0%E5%AD%98%E5%82%A8%E6%A0%91%E5%BD%A2%E7%BB%93%E6%9E%84.resources/%E7%A7%BB%E5%8A%A8%E6%A0%91%E6%88%96%E5%AD%90%E6%A0%91746x426.gif" height="426" width="746"/></div>
-<div>以上6种需求覆盖了最为常用的几种情况，想要更多的例子各位看官可以后台小纸条我.  这是多层级关系解决方案中非常好的一种，希望能帮助大家解决一些问题。</div>
+<div>以上6种需求覆盖了最为常用的几种情况，解决了我基本上所有的问题，想要更多的例子各位看官可以后台小纸条我.  </div>
 <div><br/></div>
-<div>结束语: Every thing has tradeoffs, Designers should keep data structure &amp; algorithm in mind.</div>
+<div>结束语:</div>
+<div>这是多层级关系解决方案中非常好的一种，希望能帮助各位解决一些问题, 找到适合自己项目的解决方案。下面的最后一个link是我这篇文章github地址，其中有我做例子用的sql语句，看官可直接参考。</div>
 <div><br/></div>
 <div>更多相关资料：</div>
 <div><a href="http://www.slideshare.net/billkarwin/models-for-hierarchical-data">http://www.slideshare.net/billkarwin/models-for-hierarchical-data</a></div>
@@ -93,7 +94,7 @@
 <div><a href="http://stackoverflow.com/questions/23030755/depth-in-mysql-and-closure-table-trees">http://stackoverflow.com/questions/23030755/depth-in-mysql-and-closure-table-trees</a></div>
 <div><a href="http://mp.weixin.qq.com/s?__biz=MjM5NjAwNzI0MA==&amp;mid=2651941866&amp;idx=2&amp;sn=158d0b9b6ed93c15c6876126352d48d9&amp;scene=23&amp;srcid=0511Oe59cZtONNzdntkXuqaw#rd"/><a href="http://mp.weixin.qq.com/s?__biz=MjM5NjAwNzI0MA==&amp;mid=2651941866&amp;idx=2&amp;sn=158d0b9b6ed93c15c6876126352d48d9&amp;scene=23&amp;srcid=0511Oe59cZtONNzdntkXuqaw#rd">http://mp.weixin.qq.com/s?__biz=MjM5NjAwNzI0MA==&amp;mid=2651941866&amp;idx=2&amp;sn=158d0b9b6ed93c15c6876126352d48d9&amp;scene=23&amp;srcid=0511Oe59cZtONNzdntkXuqaw#rd</a></div>
 <div><a href="https://detail.tmall.com/item.htm?spm=a230r.1.14.9.axx0DG&amp;id=45220665214&amp;cm_id=140105335569ed55e27b&amp;abbucket=8">https://detail.tmall.com/item.htm?spm=a230r.1.14.9.axx0DG&amp;id=45220665214&amp;cm_id=140105335569ed55e27b&amp;abbucket=8</a></div>
-<div><a href="https://github.com/Agileaq/Hierarchy_Design">https://github.com/Agileaq/Hierarchy_Design</a></div>
+<div><a href="https://github.com/Agileaq/Hierarchical_Design">https://github.com/Agileaq/Hierarchical_Design</a></div>
 <div><br/></div>
 <div>作者 ：Arc_Qian</div>
 <div>钱晟龙 现任点融网架构组产品研发工程师, 主要任务是 思考并尝试解决各类点融网迈出第一公里之后遇到的现实问题。</div>
