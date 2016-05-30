@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/><meta name="exporter-version" content="Evernote Mac 6.5 (453172)"/><meta name="altitude" content="485.7275085449219"/><meta name="author" content="286999915@qq.com"/><meta name="created" content="2016-05-11 09:14:55 +0000"/><meta name="latitude" content="30.58435317489708"/><meta name="longitude" content="104.0519487852192"/><meta name="source" content="desktop.mac"/><meta name="updated" content="2016-05-30 10:20:52 +0000"/><title>干货：在关系型数据库中优雅地存储树形结构</title></head><body>
+<div><span style="font-size: 18px;">导语：</span></div>
+<div>我们时常会遇到这样的场景，如：组织结构图、回复评论的评论链、用于组织资源的树形资源组。</div>
+<div>如图：</div>
+<div><img src="%E5%B9%B2%E8%B4%A7%EF%BC%9A%E5%9C%A8%E5%85%B3%E7%B3%BB%E5%9E%8B%E6%95%B0%E6%8D%AE%E5%BA%93%E4%B8%AD%E4%BC%98%E9%9B%85%E5%9C%B0%E5%AD%98%E5%82%A8%E6%A0%91%E5%BD%A2%E7%BB%93%E6%9E%84.resources/14B741A8-62E2-48C4-9133-28FBFD259D14.png" height="220" width="372"/></div>
+<div><img src="%E5%B9%B2%E8%B4%A7%EF%BC%9A%E5%9C%A8%E5%85%B3%E7%B3%BB%E5%9E%8B%E6%95%B0%E6%8D%AE%E5%BA%93%E4%B8%AD%E4%BC%98%E9%9B%85%E5%9C%B0%E5%AD%98%E5%82%A8%E6%A0%91%E5%BD%A2%E7%BB%93%E6%9E%84.resources/385E5FD9-2DE7-4650-902C-455DEFAA19A3.png" height="1222" width="682"/></div>
+<div>而作为一名程序员如果你特别纠结于类似这样的问题 “我们的需求方想要支持多少层”， “我觉得管理或者维护树形结构的代码简直烦透了”，那么你应该试一试我下面提到的第二种树形结构的解决方案。 </div>
+<div><br/></div>
+<div>正文：</div>
+<div>到目前为止我在实战中曾使用过三种方式来实现这种hierarchical-data:</div>
+<ol>
+<li>Adjacency list (邻接表)</li>
+<li>Closure table (闭包表)</li>
+<li>Path enumeration (路径枚举)</li>
+</ol>
+<div>因为不想篇幅太长，本文仅详细介绍Closure table，并与Adjacency list做少许对比，文章附录中会有资料链接，里面有四种hierarchical-data详解(上面三种 + Nested Set )</div>
+<div>我这里以一个网易评论树来做讲解【已编号（1）-（9）】：</div>
+<div><img src="%E5%B9%B2%E8%B4%A7%EF%BC%9A%E5%9C%A8%E5%85%B3%E7%B3%BB%E5%9E%8B%E6%95%B0%E6%8D%AE%E5%BA%93%E4%B8%AD%E4%BC%98%E9%9B%85%E5%9C%B0%E5%AD%98%E5%82%A8%E6%A0%91%E5%BD%A2%E7%BB%93%E6%9E%84.resources/543799F8-107D-4995-A7EC-342E118DC539.png" height="1026" width="1544"/></div>
+<div>两种设计共有的数据：</div>
+<div><img src="%E5%B9%B2%E8%B4%A7%EF%BC%9A%E5%9C%A8%E5%85%B3%E7%B3%BB%E5%9E%8B%E6%95%B0%E6%8D%AE%E5%BA%93%E4%B8%AD%E4%BC%98%E9%9B%85%E5%9C%B0%E5%AD%98%E5%82%A8%E6%A0%91%E5%BD%A2%E7%BB%93%E6%9E%84.resources/E70F7729-95B9-41AC-A51A-70E283DC9025.png" height="584" width="1616"/></div>
+<div><span style="font-size: 18px;">设计1 -- Adjacency list (邻接表)</span></div>
+<div><img src="%E5%B9%B2%E8%B4%A7%EF%BC%9A%E5%9C%A8%E5%85%B3%E7%B3%BB%E5%9E%8B%E6%95%B0%E6%8D%AE%E5%BA%93%E4%B8%AD%E4%BC%98%E9%9B%85%E5%9C%B0%E5%AD%98%E5%82%A8%E6%A0%91%E5%BD%A2%E7%BB%93%E6%9E%84.resources/E8D6D33B-16F6-4342-A253-1B3DCD9A5FF2.png" height="389" width="391"/></div>
+<div>comment table data:</div>
+<div><img src="%E5%B9%B2%E8%B4%A7%EF%BC%9A%E5%9C%A8%E5%85%B3%E7%B3%BB%E5%9E%8B%E6%95%B0%E6%8D%AE%E5%BA%93%E4%B8%AD%E4%BC%98%E9%9B%85%E5%9C%B0%E5%AD%98%E5%82%A8%E6%A0%91%E5%BD%A2%E7%BB%93%E6%9E%84.resources/9D294BF0-E971-47ED-9A70-C160104856C9.png" height="283" width="610"/></div>
+<div>这种设计非常直观，在表comment上添加一个parent_id字段, 每一条记录都知道自己的父记录是谁. comment之间数据结构关系如下图所示：</div>
+<div><img src="%E5%B9%B2%E8%B4%A7%EF%BC%9A%E5%9C%A8%E5%85%B3%E7%B3%BB%E5%9E%8B%E6%95%B0%E6%8D%AE%E5%BA%93%E4%B8%AD%E4%BC%98%E9%9B%85%E5%9C%B0%E5%AD%98%E5%82%A8%E6%A0%91%E5%BD%A2%E7%BB%93%E6%9E%84.resources/6C367769-673B-4DAC-A923-9C063698A2D3.png" height="922" width="1404"/></div>
+<div><span style="font-size: 18px;">设计2 -- Closure table (闭包表)</span></div>
+<div><img src="%E5%B9%B2%E8%B4%A7%EF%BC%9A%E5%9C%A8%E5%85%B3%E7%B3%BB%E5%9E%8B%E6%95%B0%E6%8D%AE%E5%BA%93%E4%B8%AD%E4%BC%98%E9%9B%85%E5%9C%B0%E5%AD%98%E5%82%A8%E6%A0%91%E5%BD%A2%E7%BB%93%E6%9E%84.resources/E7128273-225B-4205-B7BA-5E1C2E2A44CF.png" height="764" width="1144"/></div>
+<div>comment table data:</div>
+<div><img src="%E5%B9%B2%E8%B4%A7%EF%BC%9A%E5%9C%A8%E5%85%B3%E7%B3%BB%E5%9E%8B%E6%95%B0%E6%8D%AE%E5%BA%93%E4%B8%AD%E4%BC%98%E9%9B%85%E5%9C%B0%E5%AD%98%E5%82%A8%E6%A0%91%E5%BD%A2%E7%BB%93%E6%9E%84.resources/809851F3-06FD-4BEA-8348-20D9335CD494.png" height="574" width="1096"/></div>
+<div>comment_path table data:</div>
+<div><img src="%E5%B9%B2%E8%B4%A7%EF%BC%9A%E5%9C%A8%E5%85%B3%E7%B3%BB%E5%9E%8B%E6%95%B0%E6%8D%AE%E5%BA%93%E4%B8%AD%E4%BC%98%E9%9B%85%E5%9C%B0%E5%AD%98%E5%82%A8%E6%A0%91%E5%BD%A2%E7%BB%93%E6%9E%84.resources/943EBF32-C4D7-4659-A5A6-00EAB3D6F383.png" height="924" width="342"/></div>
+<div>这种设计, comment table本身并不保存 评论与评论之间的关系， 而将该关系用另外一张表(comment_path)保存起来, 理论上讲需要O(n²)的空间来存储关系，但现实中并不会需要这么多。</div>
+<div>comment之间数据结构关系如下图所示：</div>
+<div><img src="%E5%B9%B2%E8%B4%A7%EF%BC%9A%E5%9C%A8%E5%85%B3%E7%B3%BB%E5%9E%8B%E6%95%B0%E6%8D%AE%E5%BA%93%E4%B8%AD%E4%BC%98%E9%9B%85%E5%9C%B0%E5%AD%98%E5%82%A8%E6%A0%91%E5%BD%A2%E7%BB%93%E6%9E%84.resources/4222BEF2-5684-46C6-B08E-DB30ADA2A7F5.png" height="854" width="1732"/></div>
+<div>每根红线都是comment_path中的一条数据， 线条上的数字为depth.</div>
+<div><br/></div>
+<div><span style="font-size: 18px;">我们直接上需求：</span></div>
+<div>1. 查询直接回复4号comment的comment(父查子) . </div>
+<div>Adjacency :  </div>
+<div>select * from comment c1 where c1.parent_id=4;</div>
+<div>Closure :   </div>
+<div>select c.* from comment c join comment_path cp on (c.id = cp.descendant) where cp.ancestor = 4 and depth = 1;</div>
+<div><img src="%E5%B9%B2%E8%B4%A7%EF%BC%9A%E5%9C%A8%E5%85%B3%E7%B3%BB%E5%9E%8B%E6%95%B0%E6%8D%AE%E5%BA%93%E4%B8%AD%E4%BC%98%E9%9B%85%E5%9C%B0%E5%AD%98%E5%82%A8%E6%A0%91%E5%BD%A2%E7%BB%93%E6%9E%84.resources/%E7%88%B6%E6%9F%A5%E5%AD%90360x134.gif" height="134" width="360"/></div>
+<div>2. 查询所有回复4号的子comment(父查所有子) . </div>
+<div>Adjacency :  </div>
+<div>思路为递归查询(使用SQL99的CTE 或 oracle的connect by语法)，不支持递归查询的数据库(如mysql) 将无法使用一条sql语句满足不固定层级数量的需求. </div>
+<div>Closure : </div>
+<div>select c.* from comment c join comment_path cp on (c.id = cp.descendant) where cp.ancestor = 4;</div>
+<div>--如果你需要保留层级关系, 则将cp中的值也返回即可</div>
+<div><img src="%E5%B9%B2%E8%B4%A7%EF%BC%9A%E5%9C%A8%E5%85%B3%E7%B3%BB%E5%9E%8B%E6%95%B0%E6%8D%AE%E5%BA%93%E4%B8%AD%E4%BC%98%E9%9B%85%E5%9C%B0%E5%AD%98%E5%82%A8%E6%A0%91%E5%BD%A2%E7%BB%93%E6%9E%84.resources/%E7%88%B6%E6%9F%A5%E6%89%80%E6%9C%89%E5%AD%90451x306.gif" height="306" width="451"/></div>
+<div>3. 查询所有7号的 父comment(子查所有父) .</div>
+<div>Adjacency : </div>
+<div>方案与需求2类似 . </div>
+<div>Closure : </div>
+<div>select c.* from comment c JOIN comment_path cp on (c.id = cp.ancestor) where cp.descendant = 7;</div>
+<div><img src="%E5%B9%B2%E8%B4%A7%EF%BC%9A%E5%9C%A8%E5%85%B3%E7%B3%BB%E5%9E%8B%E6%95%B0%E6%8D%AE%E5%BA%93%E4%B8%AD%E4%BC%98%E9%9B%85%E5%9C%B0%E5%AD%98%E5%82%A8%E6%A0%91%E5%BD%A2%E7%BB%93%E6%9E%84.resources/%E5%AD%90%E6%9F%A5%E6%89%80%E6%9C%89%E7%88%B6269x296.gif" height="296" width="269"/></div>
+<div>4. 添加一条子回复到 6号comment上(新增) . </div>
+<div>Adjacency :  </div>
+<div>insert into comment (value, parent_id, topic_id, user_id) values('(10)我以gin食阼啦', 6, 1, 2);</div>
+<div>Closure : </div>
+<div>step a: insert into comment(value, topic_id, user_id) values('(10)我以gin食阼啦', 1, 2);</div>
+<div>-- 拿到该句返回的id, 假设为10</div>
+<div>step b: insert into comment_path (ancestor, descendant, depth) select cp.ancestor, 10, cp.depth+1 from comment_path as cp where cp.descendant=6 union all select 10, 10, 0;</div>
+<div>-- 只要拥有子comment_id为6作为子节点的节点，全都新增一个id为10，deepth+1的子节点 并且插入一个10, 10, 0的节点.</div>
+<div><img src="%E5%B9%B2%E8%B4%A7%EF%BC%9A%E5%9C%A8%E5%85%B3%E7%B3%BB%E5%9E%8B%E6%95%B0%E6%8D%AE%E5%BA%93%E4%B8%AD%E4%BC%98%E9%9B%85%E5%9C%B0%E5%AD%98%E5%82%A8%E6%A0%91%E5%BD%A2%E7%BB%93%E6%9E%84.resources/%E6%8F%92%E5%85%A5%E4%B8%80%E4%B8%AA%E8%8A%82%E7%82%B9459x335.gif" height="335" width="459"/></div>
+<div>5. 从评论链中删除4号comment及其子comment(删除子或者子树) . </div>
+<div>Adjacency :  </div>
+<div>由于parent_id是可以为空的foreign key约束 ==&gt; 递归将所有4号的子节点从栈底开始 删除到栈顶。</div>
+<div>Closure : </div>
+<div>delete a from comment_path a join comment_path b on (a.descendant = b.descendant) where b.ancestor=4;</div>
+<div>-- 这句话等价于 "delete from comment_path where descendant in (select descendant from comment_path where ancestor = 4);”, 但mysql会报from句子中的表不能用于update的错误. </div>
+<div><img src="%E5%B9%B2%E8%B4%A7%EF%BC%9A%E5%9C%A8%E5%85%B3%E7%B3%BB%E5%9E%8B%E6%95%B0%E6%8D%AE%E5%BA%93%E4%B8%AD%E4%BC%98%E9%9B%85%E5%9C%B0%E5%AD%98%E5%82%A8%E6%A0%91%E5%BD%A2%E7%BB%93%E6%9E%84.resources/%E5%88%A0%E9%99%A4%E8%8A%82%E7%82%B9%E5%9C%A8%E6%A0%91%E4%B8%AD%E7%9A%84path576x428.gif" height="428" width="576"/></div>
+<div>6. 将6号comment的父comment更改为2号(移动子或者子树) . </div>
+<div>Adjacency :  </div>
+<div>update comment set parent_id = 2 where id = 6;</div>
+<div>Closure : </div>
+<div>step a:</div>
+<div>delete a from comment_path as a join comment_path as d on a.descendant = d.descendant left join comment_path as x on x.ancestor = d.ancestor and x.descendant = a.ancestor where d.ancestor = 6 and x.ancestor is null;</div>
+<div>--这样删除的原因和需求5一致.</div>
+<div>step b:</div>
+<div>insert into comment_path (ancestor, descendant, depth) select supertree.ancestor, subtree.descendant, supertree.depth+subtree.depth+1 from comment_path as supertree join comment_path as subtree where subtree.ancestor = 6 and supertree.descendant = 2;</div>
+<div><img src="%E5%B9%B2%E8%B4%A7%EF%BC%9A%E5%9C%A8%E5%85%B3%E7%B3%BB%E5%9E%8B%E6%95%B0%E6%8D%AE%E5%BA%93%E4%B8%AD%E4%BC%98%E9%9B%85%E5%9C%B0%E5%AD%98%E5%82%A8%E6%A0%91%E5%BD%A2%E7%BB%93%E6%9E%84.resources/%E7%A7%BB%E5%8A%A8%E6%A0%91%E6%88%96%E5%AD%90%E6%A0%91746x426.gif" height="426" width="746"/></div>
+<div>以上6种需求覆盖了最为常用的几种情况，想要更多的例子各位看官可以后台小纸条我.  这是多层级关系解决方案中非常好的一种，希望能帮助大家解决一些问题。</div>
+<div><br/></div>
+<div>结束语: Every thing has tradeoffs, Designers should keep data structure &amp; algorithm in mind.</div>
+<div><br/></div>
+<div>更多相关资料：</div>
+<div><a href="http://www.slideshare.net/billkarwin/models-for-hierarchical-data">http://www.slideshare.net/billkarwin/models-for-hierarchical-data</a></div>
+<div><a href="https://www.percona.com/blog/2011/02/14/moving-subtrees-in-closure-table/"/><a href="https://www.percona.com/blog/2011/02/14/moving-subtrees-in-closure-table/"/><a href="https://www.percona.com/blog/2011/02/14/moving-subtrees-in-closure-table/">https://www.percona.com/blog/2011/02/14/moving-subtrees-in-closure-table/</a></div>
+<div><a href="http://stackoverflow.com/questions/23030755/depth-in-mysql-and-closure-table-trees">http://stackoverflow.com/questions/23030755/depth-in-mysql-and-closure-table-trees</a></div>
+<div><a href="http://mp.weixin.qq.com/s?__biz=MjM5NjAwNzI0MA==&amp;mid=2651941866&amp;idx=2&amp;sn=158d0b9b6ed93c15c6876126352d48d9&amp;scene=23&amp;srcid=0511Oe59cZtONNzdntkXuqaw#rd"/><a href="http://mp.weixin.qq.com/s?__biz=MjM5NjAwNzI0MA==&amp;mid=2651941866&amp;idx=2&amp;sn=158d0b9b6ed93c15c6876126352d48d9&amp;scene=23&amp;srcid=0511Oe59cZtONNzdntkXuqaw#rd">http://mp.weixin.qq.com/s?__biz=MjM5NjAwNzI0MA==&amp;mid=2651941866&amp;idx=2&amp;sn=158d0b9b6ed93c15c6876126352d48d9&amp;scene=23&amp;srcid=0511Oe59cZtONNzdntkXuqaw#rd</a></div>
+<div><a href="https://detail.tmall.com/item.htm?spm=a230r.1.14.9.axx0DG&amp;id=45220665214&amp;cm_id=140105335569ed55e27b&amp;abbucket=8">https://detail.tmall.com/item.htm?spm=a230r.1.14.9.axx0DG&amp;id=45220665214&amp;cm_id=140105335569ed55e27b&amp;abbucket=8</a></div>
+<div><a href="https://github.com/Agileaq/Hierarchy_Design">https://github.com/Agileaq/Hierarchy_Design</a></div>
+<div><br/></div>
+<div>作者 ：Arc_Qian</div>
+<div>钱晟龙 现任点融网架构组产品研发工程师, 主要任务是 思考并尝试解决各类点融网迈出第一公里之后遇到的现实问题。</div>
+<div><br/></div>
+</body></html>
